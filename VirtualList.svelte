@@ -6,11 +6,10 @@
 	export let height = '100%';
 	export let itemHeight = undefined;
 
-	let foo;
-
 	// read-only, but visible to consumers via bind:start
-	export let start = 0;
-	export let end = 0;
+	export let startFrom = 8;
+	export let start = startFrom;
+	export let end = startFrom + 2;
 
 	// local state
 	let height_map = [];
@@ -25,12 +24,19 @@
 	let bottom = 0;
 	let average_height;
 
+	const notFromStart = startFrom > 0;
+
 	$: visible = items.slice(start, end).map((data, i) => {
 		return { index: i + start, data };
 	});
 
 	// whenever `items` changes, invalidate the current heightmap
 	$: if (mounted) refresh(items, viewport_height, itemHeight);
+
+	$: if (mounted && notFromStart && viewport.scrollTop === 0 && top > 0) {
+		// timeout to wait for height change in DOM
+		setTimeout(() => viewport.scrollTo(0, top), 0);
+	}
 
 	async function refresh(items, viewport_height, itemHeight) {
 		const { scrollTop } = viewport;
@@ -56,12 +62,15 @@
 
 		end = i;
 
+		if (notFromStart) {
+			top = content_height * start;
+		}
+
 		const remaining = items.length - end;
 		average_height = (top + content_height) / end;
 
 		bottom = remaining * average_height;
 		height_map.length = items.length;
-
 	}
 
 	async function handle_scroll() {
@@ -102,6 +111,9 @@
 		average_height = y / end;
 
 		while (i < items.length) height_map[i++] = average_height;
+		for (let j = 0; j < start; j++) {
+			height_map[j] = average_height;
+		}
 		bottom = remaining * average_height;
 
 		// prevent jumping if we scrolled up into unknown territory

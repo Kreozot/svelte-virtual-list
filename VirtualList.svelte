@@ -112,7 +112,7 @@
 
 		while (i < items.length) height_map[i++] = average_height;
 		for (let j = 0; j < start; j++) {
-			height_map[j] = average_height;
+			height_map[j] = height_map[j] || average_height;
 		}
 		bottom = remaining * average_height;
 
